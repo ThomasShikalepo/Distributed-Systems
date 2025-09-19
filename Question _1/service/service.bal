@@ -163,4 +163,31 @@ type Asset record{
       }
 
     
+    //Start Here
+// curl "http://localhost:8080/getAssetsByFaculty?faculty=Commerce%2C%20Human%20Sciences%20and%20Education"
+// curl 'http://localhost:8080/getAssetsByFaculty?faculty=Computing%20and%20Informatics'
+
+// Function definition: retrieves assets filtered by faculty
+    resource function get getAssetsByFaculty(@http:Query string faculty) returns Asset[] {
+    
+// Initialize an empty array to store assets belonging to the given faculty
+      Asset[] filteredAssets = [];
+        foreach var [_, asset] in MainDatabase.entries() {
+          if asset.faculty == faculty {
+            filteredAssets.push(asset);
+        }
+    }
+// Return the array of filtered assets
+      return filteredAssets;
+}
+
+    resource function delete deleteAsset(string assetTag)  returns Asset|http:Conflict{
+      if MainDatabase.hasKey(assetTag){
+        Asset removedAsset = MainDatabase.remove(assetTag);
+        return removedAsset;
+      }else{
+        return http:CONFLICT;
+      }
+    }
+
   }
