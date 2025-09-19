@@ -129,25 +129,4 @@ type Asset record{
         return ;
       }
     }
-
-    resource function put updateWorkOrderStatus(string assetTag, string workOrderId, @http:Query string newStatus) returns Asset|http:NotFound {
-        // Find the asset.
-        if MainDatabase.hasKey(assetTag) {
-            Asset existingAsset = <Asset> MainDatabase[assetTag];
-            
-            // Find the specific work order to update.
-            foreach var workOrder in existingAsset.workOrders {
-                if workOrder.id == workOrderId {
-                    // Update the status of the work order.
-                    workOrder.status = newStatus;
-                    return existingAsset;
-                }
-            }
-            // Work order not found.
-            return http:NOT_FOUND;
-        } else {
-            // Asset not found.
-            return http:NOT_FOUND;
-        }
-    }
   }
