@@ -319,5 +319,69 @@ function postaddTaskToWorkOrder(string assetTag, string workOrderId, @http:Paylo
     }
 }
 
+resource function delete removeTaskFromWorkOrder(string assetTag, string workOrderId, string service_) returns Task|http:NotFound {
+        // Check if the asset exists.
+        if MainDatabase.hasKey(assetTag) {
+            // Retrieve the asset record.
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Find the correct work order.
+            foreach var workOrder in existingAsset.workOrders {
+                if workOrder.id == workOrderId {
+                    // Once the work order is found, find the index of the task to remove.
+                    int indexToRemove = -1;
+                    foreach int i in 0..<workOrder.tasks.length() {
+                        if workOrder.tasks[i].service_ == service_ {
+                            indexToRemove = i;
+                            break;
+                        }
+                    }
+                    
+                    // If the task was found, remove it.
+                    if indexToRemove != -1 {
+                        Task removed =  workOrder.tasks.remove(indexToRemove);
+                        return removed;
+                    } else {
+                        // Task not found within the work order.
+                        return http:NOT_FOUND;
+                    }
+                }
+            }
+            // If the loop finishes, the work order was not found.
+            return http:NOT_FOUND;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+    
+    resource function post openNewWorkOrder(string assetTag, @http:Payload WorkOrder newWorkOrder) returns Asset|http:NotFound|http:Conflict {
+        // Check if the asset exists.
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Set the initial status of the work order to "OPEN".
+            newWorkOrder.status = "OPEN";
+            
+            // Check for a duplicate work order by ID to prevent conflicts.
+            foreach var wo in existingAsset.workOrders {
+                if wo.id == newWorkOrder.id {
+                    return http:CONFLICT;
+                }
+            }
+            
+            // Add the new work order to the asset's workOrders array.
+            existingAsset.workOrders.push(newWorkOrder);
+            
+            // Update the asset's status to "INACTIVE" since it's faulty.
+            existingAsset.status = "INACTIVE";
+            
+            return existingAsset;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+
   }
 
