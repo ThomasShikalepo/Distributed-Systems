@@ -113,3 +113,20 @@ type Asset record{
 
     
   };
+
+  service / on new http:Listener(8080){
+    resource function get getAllAssets() returns Asset[]{
+      return MainDatabase.toArray();
+    };
+
+    resource function get getSpecificAsset(string assetTag) returns Asset?{
+      // Checking if the asset exists using the assetTag passed in the URL
+      if MainDatabase.hasKey(assetTag){
+        return MainDatabase[assetTag];
+      }
+      else{
+        // If the key is not found it returns null/nothing
+        return ;
+      }
+    }
+  }
