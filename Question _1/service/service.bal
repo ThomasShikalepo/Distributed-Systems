@@ -249,3 +249,75 @@ type Asset record{
     }
 
   }
+resource function post addScheduleToAsset(string assetTag, @http:Payload Schedule newSchedule) returns Asset|error     {
+if MainDatabase .hasKey        (assetTag) {
+        Asset        existingAsset =         <Asset> MainDatabase        [assetTag] ;
+
+foreach var schlin existingAsset .schedules          {
+if schl .scheduleName == newSchedule .scheduleName && schl .dueDate == newSchedule .dueDate              {
+return error                 ("Schedule with same name and date already exists") ;
+            }
+        }
+
+        existingAsset.schedules .push        (newSchedule) ;
+return existingAsset ;
+    } else      {
+return error         ("Asset not found with tag: " + assetTag);
+    }
+}
+
+resource functiondelete removeScheduleFromAsset (string assetTag, @http:Query string scheduleName, @http:Query string dueDate) returns Schedule|error {
+    if MainDatabase.hasKey(assetTag) {
+        Asset existingAsset = <Asset>MainDatabase[assetTag];
+        int indexToRemove = -1;
+
+        foreach int i in 0 ..< existingAsset.schedules.length() {
+            if existingAsset.schedules[i].scheduleName == scheduleName && existingAsset.schedules[i].dueDate == dueDate {
+                indexToRemove = i;
+                break;
+            }
+        }
+
+        if indexToRemove != -1 {
+            Schedule removed = existingAsset.schedules.remove(indexToRemove);
+            return removed;
+        } else {
+            return error("Schedule not found with name: " + scheduleName + " and date: " + dueDate);
+        }
+    } else {
+        return error("Asset not found with tag: " + assetTag);
+    }
+}
+
+    resource 
+function postaddTaskToWorkOrder(string assetTag, string workOrderId, @http:Payload Task newTask) returns Asset|http:NotFound|http:Conflict {
+    // Check if the asset exists first.
+    if MainDatabase.hasKey(assetTag) {
+        // Retrieve the asset record.
+        Asset existingAsset = <Asset>MainDatabase[assetTag];
+
+        // Find the specific work order using a foreach loop.
+        foreach var workOrder in existingAsset.workOrders {
+            if workOrder.id == workOrderId {
+                // Check for duplicate tasks (optional, but good practice).
+                foreach var task in workOrder.tasks {
+                    if task.service_ == newTask.service_ {
+                        return http:CONFLICT; // Task already exists in this work order.
+                    }
+                }
+
+                // Add the new task to the 'tasks' array of the found work order.
+                workOrder.tasks.push(newTask);
+                return existingAsset;
+            }
+        }
+        // If the loop finishes, the work order was not found.
+        return http:NOT_FOUND;
+    } else {
+        // Asset not found.
+        return http:NOT_FOUND;
+    }
+}
+
+  }
+
