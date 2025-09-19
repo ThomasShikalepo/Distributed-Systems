@@ -129,4 +129,38 @@ type Asset record{
         return ;
       }
     }
+
+     resource function post newAsset(@http:Payload Asset new_asset) returns Asset|http:Conflict{
+      
+      // Checking if asset already exists
+      if MainDatabase.hasKey(new_asset.assetTag){
+        return http:CONFLICT;
+      }
+
+      // Adding asset to database 
+      MainDatabase[new_asset.assetTag] = new_asset;
+
+      // Return the newly added asset
+      return new_asset;
+    }
+
+    // Note on newAsset(): The line MainDatabase[new_asset.assetTag] = new_asset; 
+    // uses the assetTag as the unique key. It's taking the assetTag value(which 
+    // is just a small part of the new_asset record) and using it as the label or 
+    // address for where the entire new_asset record will be stored in the MainDatabase.
+
+
+    // The dot" . " as in new_asset.assetTag is used to access a field or property 
+    // of a structured data type.
+
+    resource function put updateAsset(@http:Payload Asset updatedAsset) returns Asset|http:Conflict{
+      // If updatedAsset has a key that also exists in MainDatabase
+      if MainDatabase.hasKey(updatedAsset.assetTag){
+         MainDatabase[updatedAsset.assetTag] = updatedAsset;
+         return updatedAsset;
+      }else{
+        return http:CONFLICT;
+      }
+
+    
   }
