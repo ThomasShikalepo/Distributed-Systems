@@ -188,9 +188,13 @@ function listAvailableCars() returns error? {
     AddToCartResponse add_to_cartResponse = check ep->add_to_cart(add_to_cartRequest);
     io:println(add_to_cartResponse);
 
-    PlaceReservationRequest place_reservationRequest = {customer_id: "ballerina"};
-    PlaceReservationResponse place_reservationResponse = check ep->place_reservation(place_reservationRequest);
-    io:println(place_reservationResponse);
+function placeReservation() returns error? {
+    io:println("Enter Your Customer ID: ");
+    string customer_id = io:readln();
+    PlaceReservationRequest req = {customer_id};
+    PlaceReservationResponse res = check ep->place_reservation(req);
+    io:println("Reservation Placed: ", res.reservation.reservation_id);
+}
 
     ListAvailableCarsRequest list_available_carsRequest = {filter: "ballerina"};
     stream<Car, error?> list_available_carsResponse = check ep->list_available_cars(list_available_carsRequest);
