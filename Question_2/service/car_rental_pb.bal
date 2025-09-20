@@ -633,7 +633,7 @@ public type ContextCreateUsersResponse record {|
 
 @protobuf:Descriptor {value: CAR_RENTAL_DESC}
 public type User record {|
-    string id = "";
+    readonly string id = "";
     string name = "";
     string role = "";
 |};
@@ -670,7 +670,8 @@ public type UpdateCarResponse record {|
 
 @protobuf:Descriptor {value: CAR_RENTAL_DESC}
 public type CartItem record {|
-    string plate = "";
+    readonly string plate = "";
+    readonly string customer_id = "";
     string start_date = "";
     string end_date = "";
 |};
@@ -703,15 +704,15 @@ public type RemoveCarResponse record {|
 
 @protobuf:Descriptor {value: CAR_RENTAL_DESC}
 public type Reservation record {|
-    string reservation_id = "";
-    string customer_id = "";
+    readonly string reservation_id = "";
+    readonly string customer_id = "";
     CartItem[] items = [];
     float total_price = 0.0;
 |};
 
 @protobuf:Descriptor {value: CAR_RENTAL_DESC}
 public type Car record {|
-    string plate = "";
+    readonly string plate = "";
     string make = "";
     string model = "";
     int year = 0;
