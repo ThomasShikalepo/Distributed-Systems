@@ -184,9 +184,16 @@ function listAvailableCars() returns error? {
 
    
 
-    AddToCartRequest add_to_cartRequest = {customer_id: "ballerina", item: {plate: "ballerina", start_date: "ballerina", end_date: "ballerina"}};
-    AddToCartResponse add_to_cartResponse = check ep->add_to_cart(add_to_cartRequest);
-    io:println(add_to_cartResponse);
+   function addToCart() returns error? {
+    io:println("Enter Your Customer ID: ");
+    string customer_id = io:readln();
+    io:println("Enter Car Plate to Add to Cart: ");
+    string plate = io:readln();
+
+    AddToCartRequest req = {customer_id, item: {plate, start_date: "2025-09-25", end_date: "2025-09-28"}};
+    AddToCartResponse res = check ep->add_to_cart(req);
+    io:println(res.message);
+}
 
 function placeReservation() returns error? {
     io:println("Enter Your Customer ID: ");
