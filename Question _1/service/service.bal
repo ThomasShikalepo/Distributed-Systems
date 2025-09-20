@@ -264,7 +264,7 @@ type Asset record{
     } else {
         return error("Asset not found with tag: " + assetTag);
     }
-
+  }
     resource function delete removeScheduleFromAsset(string assetTag, @http:Query string scheduleName, @http:Query string dueDate) returns Schedule|error {
         if MainDatabase.hasKey(assetTag) {
             Asset existingAsset = <Asset>MainDatabase[assetTag];
@@ -352,5 +352,107 @@ type Asset record{
             return http:NOT_FOUND;
         }
     }
+
+
+
+     resource function post openNewWorkOrder(string assetTag, @http:Payload WorkOrder newWorkOrder) returns Asset|http:NotFound|http:Conflict {
+        // Check if the asset exists.
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Set the initial status of the work order to "OPEN".
+            newWorkOrder.status = "OPEN";
+            
+            // Check for a duplicate work order by ID to prevent conflicts.
+            foreach var wo in existingAsset.workOrders {
+                if wo.id == newWorkOrder.id {
+                    return http:CONFLICT;
+                }
+            }
+            
+            // Add the new work order to the asset's workOrders array.
+            existingAsset.workOrders.push(newWorkOrder);
+            
+            // Update the asset's status to "INACTIVE" since it's faulty.
+            existingAsset.status = "INACTIVE";
+            
+            return existingAsset;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+
+
+    resource function put updateWorkOrderStatus(string assetTag, string workOrderId, @http:Query string newStatus) returns Asset|http:NotFound {
+        // Find the asset.
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Find the specific work order to update.
+            foreach var workOrder in existingAsset.workOrders {
+                if workOrder.id == workOrderId {
+                    // Update the status of the work order.
+                    workOrder.status = newStatus;
+                    return existingAsset;
+                }
+            }
+            // Work order not found.
+            return http:NOT_FOUND;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+
+    resource function put closeWorkOrder(string assetTag, string workOrderId) returns Asset|http:NotFound {
+        // Find the asset.
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Find the specific work order to close.
+            foreach var workOrder in existingAsset.workOrders {
+                if workOrder.id == workOrderId {
+                    // Set the work order status to "CLOSED".
+                    workOrder.status = "CLOSED";
+                    // Change the asset status back to "ACTIVE".
+                    existingAsset.status = "ACTIVE";
+                    return existingAsset;
+                }
+            }
+            // Work order not found.
+            return http:NOT_FOUND;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+      
+
+
+    // Get all assets with overdue schedules
+    resource function get overdueAssets() returns Asset[]|error {
+      Asset[] overdueAssets = [];
+      string today = "2025-09-18"; // Current date
+    
+      foreach Asset asset in MainDatabase {
+        foreach Schedule s in asset.schedules {
+            if s.dueDate < today {
+                overdueAssets.push(asset);
+                break; // Found one overdue schedule, no need to check others for this asset
+            }
+        }
+      }
+    
+      if overdueAssets.length() == 0 {
+        return error("No overdue assets found");
+      }
+      
+        return overdueAssets;
+      }
+  
 }
+
+
+
 
