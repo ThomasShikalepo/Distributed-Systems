@@ -198,13 +198,6 @@ function placeReservation() returns error? {
     io:println("Reservation Placed: ", res.reservation.reservation_id);
 }
 
-    ListAvailableCarsRequest list_available_carsRequest = {filter: "ballerina"};
-    stream<Car, error?> list_available_carsResponse = check ep->list_available_cars(list_available_carsRequest);
-    check list_available_carsResponse.forEach(function(Car value) {
-        io:println(value);
-    });
-
-    }
 
 // --- Customer Functions ---
 function searchCar() returns error? {
@@ -217,11 +210,4 @@ function searchCar() returns error? {
         io:println(res.car);
     }
 }
-
-    User create_usersRequest = {id: "ballerina", name: "ballerina", role: "ballerina"};
-    Create_usersStreamingClient create_usersStreamingClient = check ep->create_users();
-    check create_usersStreamingClient->sendUser(create_usersRequest);
-    check create_usersStreamingClient->complete();
-    CreateUsersResponse? create_usersResponse = check create_usersStreamingClient->receiveCreateUsersResponse();
-    io:println(create_usersResponse);
 
