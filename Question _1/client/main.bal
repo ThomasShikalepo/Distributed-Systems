@@ -35,10 +35,6 @@ public type Asset record {
 };
 
 
-
-public function main() {
-    io:println("Hello, World!");
-}
 public client class AssetDatabaseClient {
     // The underlying HTTP client.
     private final http:Client httpClient;
@@ -59,4 +55,8 @@ public client class AssetDatabaseClient {
     remote function getSpecificAsset(string assetTag) returns Asset|error|() {
         return self.httpClient->get(string `/getSpecificAsset?assetTag=${assetTag}`);
     }
-    }
+    
+public function main() {
+    io:println("Hello, World!");
+}
+}
