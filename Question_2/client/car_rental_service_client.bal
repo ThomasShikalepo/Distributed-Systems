@@ -202,6 +202,20 @@ function placeReservation() returns error? {
         io:println(value);
     });
 
+    }
+
+// --- Customer Functions ---
+function searchCar() returns error? {
+    io:println("Enter Plate to Search: ");
+    string plate = io:readln();
+    SearchCarRequest req = {plate};
+    SearchCarResponse res = check ep->search_car(req);
+    io:println("Search Result: ", res.message);
+    if res.car.plate != "" {
+        io:println(res.car);
+    }
+}
+
     User create_usersRequest = {id: "ballerina", name: "ballerina", role: "ballerina"};
     Create_usersStreamingClient create_usersStreamingClient = check ep->create_users();
     check create_usersStreamingClient->sendUser(create_usersRequest);
