@@ -73,6 +73,21 @@ public client class AssetDatabaseClient {
     remote function deleteAsset(string assetTag) returns Asset|error {
         return self.httpClient->delete(string `/deleteAsset?assetTag=${assetTag}`);
     }
+    // Corresponds to 'resource function post addComponentToAsset(string assetTag, @http:Payload Component newComponent)'
+    remote function addComponentToAsset(string assetTag, Component newComponent) returns Asset|error {
+        return self.httpClient->post(string `/addComponentToAsset?assetTag=${assetTag}`, newComponent);
+    }
+
+    // Corresponds to 'resource function delete removeComponentFromAsset(string assetTag, string serialNumber)'
+    remote function removeComponentFromAsset(string assetTag, string serialNumber) returns Asset|error {
+        return self.httpClient->delete(string `/removeComponentFromAsset?assetTag=${assetTag}&serialNumber=${serialNumber}`);
+    }
+
+    remote function addScheduleToAsset(string assetTag, Schedule newSchedule) returns Asset|error {
+        return self.httpClient->post(string `/addScheduleToAsset?assetTag=${assetTag}`, newSchedule);
+    }
+
+
     }
     
 public function main() {
