@@ -1,4 +1,5 @@
 import ballerina/grpc;
+import ballerina/io;
 
 // --- Tables ---
 table<User> key(id) usersTable = table [
@@ -69,10 +70,57 @@ service "Car_Rental_Service" on ep {
     remote function add_to_cart(AddToCartRequest value) returns AddToCartResponse|error {
     }
 
-    remote function place_reservation(PlaceReservationRequest value) returns PlaceReservationResponse|error {
+    // PLACE RESERVATION
+    remote function place_reservation(PlaceReservationRequest req) returns PlaceReservationResponse|error {
+        CartItem[] items = [];
+        float total = 0;
+
+        foreach var ci in cartItemsTable {
+            if ci.customer_id == req.customer_id {
+                items.push({
+                    plate: ci.plate,
+                    start_date: ci.start_date,
+                    end_date: ci.end_date
+                });
+
+                Car? car = carsTable[ci.plate];
+                if car is Car {
+                    total += car.daily_price;
+                }
+            }
+        }
+
+        string newId = "RES-" + req.customer_id;
+        Reservation reservation = {
+            reservation_id: newId,
+            customer_id: req.customer_id,
+            items: items,
+            total_price: total
+        };
+
+        if reservations.hasKey(newId) {
+            reservations.put(reservation);
+        } else {
+            reservations.add(reservation);
+        }
+
+        io:println("Reservation created: ", reservation.reservation_id);
+        return {reservation: reservation};
     }
 
-    remote function create_users(stream<User, grpc:Error?> clientStream) returns CreateUsersResponse|error {
+    // CREATE USERS (client streaming)
+    remote function create_users(stream<User, error?> clientStream) returns CreateUsersResponse|error {
+        error? e = clientStream.forEach(function(User user) {
+            if !usersTable.hasKey(user.id) {
+                usersTable.add(user);
+                io:println("User created: ", user.name);
+            }
+        });
+
+        if e is error {
+            return e;
+        }
+        return {message: "Users created"};
     }
 
     
