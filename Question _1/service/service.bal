@@ -264,5 +264,93 @@ type Asset record{
     } else {
         return error("Asset not found with tag: " + assetTag);
     }
+
+    resource function delete removeScheduleFromAsset(string assetTag, @http:Query string scheduleName, @http:Query string dueDate) returns Schedule|error {
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset>MainDatabase[assetTag];
+            int indexToRemove = -1;
+
+            foreach int i in 0 ..< existingAsset.schedules.length() {
+                if existingAsset.schedules[i].scheduleName == scheduleName && existingAsset.schedules[i].dueDate == dueDate {
+                    indexToRemove = i;
+                    break;
+                }
+            }
+
+            if indexToRemove != -1 {
+                Schedule removed = existingAsset.schedules.remove(indexToRemove);
+                return removed;
+            } else {
+                return error("Schedule not found with name: " + scheduleName + " and date: " + dueDate);
+            }
+        } else {
+            return error("Asset not found with tag: " + assetTag);
+        }
+    }
+
+    resource function post addTaskToWorkOrder(string assetTag, string workOrderId, @http:Payload Task newTask) returns Asset|http:NotFound|http:Conflict {
+        // Check if the asset exists first.
+        if MainDatabase.hasKey(assetTag) {
+            // Retrieve the asset record.
+            Asset existingAsset = <Asset>MainDatabase[assetTag];
+
+            // Find the specific work order using a foreach loop.
+            foreach var workOrder in existingAsset.workOrders {
+                if workOrder.id == workOrderId {
+                    // Check for duplicate tasks (optional, but good practice).
+                    foreach var task in workOrder.tasks {
+                        if task.service_ == newTask.service_ {
+                            return http:CONFLICT; // Task already exists in this work order.
+                        }
+                    }
+
+                    // Add the new task to the 'tasks' array of the found work order.
+                    workOrder.tasks.push(newTask);
+                    return existingAsset;
+                }
+            }
+            // If the loop finishes, the work order was not found.
+            return http:NOT_FOUND;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
+
+    resource function delete removeTaskFromWorkOrder(string assetTag, string workOrderId, string service_) returns Task|http:NotFound {
+        // Check if the asset exists.
+        if MainDatabase.hasKey(assetTag) {
+            // Retrieve the asset record.
+            Asset existingAsset = <Asset>MainDatabase[assetTag];
+
+            // Find the correct work order.
+            foreach var workOrder in existingAsset.workOrders {
+                if workOrder.id == workOrderId {
+                    // Once the work order is found, find the index of the task to remove.
+                    int indexToRemove = -1;
+                    foreach int i in 0 ..< workOrder.tasks.length() {
+                        if workOrder.tasks[i].service_ == service_ {
+                            indexToRemove = i;
+                            break;
+                        }
+                    }
+
+                    // If the task was found, remove it.
+                    if indexToRemove != -1 {
+                        Task removed = workOrder.tasks.remove(indexToRemove);
+                        return removed;
+                    } else {
+                        // Task not found within the work order.
+                        return http:NOT_FOUND;
+                    }
+                }
+            }
+            // If the loop finishes, the work order was not found.
+            return http:NOT_FOUND;
+        } else {
+            // Asset not found.
+            return http:NOT_FOUND;
+        }
+    }
 }
 
