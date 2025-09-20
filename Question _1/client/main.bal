@@ -64,7 +64,15 @@ public client class AssetDatabaseClient {
     remote function updateAsset(Asset updatedAsset) returns Asset|error {
         return self.httpClient->put("/updateAsset", updatedAsset);
     }
+ // Corresponds to 'resource function get getAssetsByFaculty(@http:Query string faculty)'
+    remote function getAssetsByFaculty(string faculty) returns Asset[]|error {
+        return self.httpClient->get(string `/getAssetsByFaculty?faculty=${faculty}`);
+    }
 
+    // Corresponds to 'resource function delete deleteAsset(string assetTag)'
+    remote function deleteAsset(string assetTag) returns Asset|error {
+        return self.httpClient->delete(string `/deleteAsset?assetTag=${assetTag}`);
+    }
     }
     
 public function main() {
