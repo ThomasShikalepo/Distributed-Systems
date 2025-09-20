@@ -42,8 +42,25 @@ service "Car_Rental_Service" on ep {
         return {status: "UPDATED"};
     }
 
+ // REMOVE CAR
+    remote function remove_car(RemoveCarRequest req) returns RemoveCarResponse|error {
+        if carsTable.hasKey(req.plate) {
+            _ = carsTable.remove(req.plate);
+        }
+        Car[] remaining = [];
+        foreach var c in carsTable {
+            remaining.push(c);
+        }
+        return {cars: remaining};
+    }
 
-    remote function remove_car(RemoveCarRequest value) returns RemoveCarResponse|error {
+    // LIST AVAILABLE CARS (server streaming)
+    remote function list_available_cars(ListAvailableCarsRequest req) returns stream<Car, error?>|error {
+        // Just return a stream from a query expression
+        stream<Car, error?> s = from var c in carsTable
+                where c.status == "AVAILABLE"
+                    select c;
+        return s;
     }
 
     remote function search_car(SearchCarRequest value) returns SearchCarResponse|error {
@@ -58,6 +75,5 @@ service "Car_Rental_Service" on ep {
     remote function create_users(stream<User, grpc:Error?> clientStream) returns CreateUsersResponse|error {
     }
 
-    remote function list_available_cars(ListAvailableCarsRequest value) returns stream<Car, error?>|error {
-    }
+    
 }
