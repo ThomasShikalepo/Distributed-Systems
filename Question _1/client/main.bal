@@ -55,6 +55,16 @@ public client class AssetDatabaseClient {
     remote function getSpecificAsset(string assetTag) returns Asset|error|() {
         return self.httpClient->get(string `/getSpecificAsset?assetTag=${assetTag}`);
     }
+ remote function newAsset(Asset newAsset) returns Asset|error {
+        return self.httpClient->post("/newAsset", newAsset);
+    }
+
+    // Corresponds to 'resource function put updateAsset(@http:Payload Asset updatedAsset)'
+    // Updates an existing asset.
+    remote function updateAsset(Asset updatedAsset) returns Asset|error {
+        return self.httpClient->put("/updateAsset", updatedAsset);
+    }
+
     }
     
 public function main() {
