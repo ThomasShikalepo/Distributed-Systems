@@ -163,15 +163,26 @@ function addCar() returns error? {
     UpdateCarResponse res = check ep->update_car(req);
     io:println("Car Updated: ", res.status);
 }
+function removeCar() returns error? {
+    io:println("Enter Car Plate to Remove: ");
+    string plate = io:readln();
+    RemoveCarRequest req = {plate};
+    RemoveCarResponse res = check ep->remove_car(req);
+    io:println("Remaining Cars: ", res.cars);
+}
+
+// --- Shared Functions ---
+function listAvailableCars() returns error? {
+    ListAvailableCarsRequest req = {filter: ""};
+    stream<Car, error?> carsStream = check ep->list_available_cars(req);
+    io:println("Available Cars:");
+    check carsStream.forEach(function(Car car) {
+        io:println(car);
+    });
+}
 
 
-    RemoveCarRequest remove_carRequest = {plate: "ballerina"};
-    RemoveCarResponse remove_carResponse = check ep->remove_car(remove_carRequest);
-    io:println(remove_carResponse);
-
-    SearchCarRequest search_carRequest = {plate: "ballerina"};
-    SearchCarResponse search_carResponse = check ep->search_car(search_carRequest);
-    io:println(search_carResponse);
+   
 
     AddToCartRequest add_to_cartRequest = {customer_id: "ballerina", item: {plate: "ballerina", start_date: "ballerina", end_date: "ballerina"}};
     AddToCartResponse add_to_cartResponse = check ep->add_to_cart(add_to_cartRequest);
