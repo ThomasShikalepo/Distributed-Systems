@@ -115,13 +115,55 @@ function customerSelection() returns error? {
 }
 
 
-    AddCarRequest add_carRequest = {car: {plate: "ballerina", make: "ballerina", model: "ballerina", year: 1, daily_price: 1, mileage: 1, status: "ballerina"}};
-    AddCarResponse add_carResponse = check ep->add_car(add_carRequest);
-    io:println(add_carResponse);
+   // --- Admin Functions ---
+function addCar() returns error? {
+    io:println("Enter Car Details:");
+    io:println("Plate: ");
+    string plate = io:readln();
+    io:println("Make: ");
+    string make = io:readln();
+    io:println("Model: ");
+    string model = io:readln();
+    io:println("Year: ");
+    int year = check int:fromString(io:readln());
+    io:println("Daily Price: ");
+    float daily_price = check float:fromString(io:readln());
+    io:println("Mileage: ");
+    int mileage = check int:fromString(io:readln());
+    io:println("Status (AVAILABLE/UNAVAILABLE): ");
+    string status = io:readln();
 
-    UpdateCarRequest update_carRequest = {car: {plate: "ballerina", make: "ballerina", model: "ballerina", year: 1, daily_price: 1, mileage: 1, status: "ballerina"}};
-    UpdateCarResponse update_carResponse = check ep->update_car(update_carRequest);
-    io:println(update_carResponse);
+    AddCarRequest req = {
+        car: {plate, make, model, year, daily_price, mileage, status}
+    };
+    AddCarResponse res = check ep->add_car(req);
+    io:println("Car Added: ", res.plate);
+}
+
+
+   function updateCar() returns error? {
+    io:println("Enter Car Plate to Update: ");
+    string plate = io:readln();
+    io:println("New Make: ");
+    string make = io:readln();
+    io:println("New Model: ");
+    string model = io:readln();
+    io:println("New Year: ");
+    int year = check int:fromString(io:readln());
+    io:println("New Daily Price: ");
+    float daily_price = check float:fromString(io:readln());
+    io:println("New Mileage: ");
+    int mileage = check int:fromString(io:readln());
+    io:println("New Status (AVAILABLE/UNAVAILABLE): ");
+    string status = io:readln();
+
+    UpdateCarRequest req = {
+        car: {plate, make, model, year, daily_price, mileage, status}
+    };
+    UpdateCarResponse res = check ep->update_car(req);
+    io:println("Car Updated: ", res.status);
+}
+
 
     RemoveCarRequest remove_carRequest = {plate: "ballerina"};
     RemoveCarResponse remove_carResponse = check ep->remove_car(remove_carRequest);
