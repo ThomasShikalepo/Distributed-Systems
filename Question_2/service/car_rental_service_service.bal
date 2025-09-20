@@ -22,11 +22,26 @@ listener grpc:Listener ep = new (9090);
 @grpc:Descriptor {value: CAR_RENTAL_DESC}
 service "Car_Rental_Service" on ep {
 
-    remote function add_car(AddCarRequest value) returns AddCarResponse|error {
+       // ADD CAR
+    remote function add_car(AddCarRequest req) returns AddCarResponse|error {
+        Car car = req.car;
+        if carsTable.hasKey(car.plate) {
+            return {plate: car.plate};
+        }
+        carsTable.add(car);
+        return {plate: car.plate};
     }
 
-    remote function update_car(UpdateCarRequest value) returns UpdateCarResponse|error {
+    // UPDATE CAR
+    remote function update_car(UpdateCarRequest req) returns UpdateCarResponse|error {
+        Car car = req.car;
+        if !carsTable.hasKey(car.plate) {
+            return {status: "Car not found"};
+        }
+        carsTable.put(car);
+        return {status: "UPDATED"};
     }
+
 
     remote function remove_car(RemoveCarRequest value) returns RemoveCarResponse|error {
     }
