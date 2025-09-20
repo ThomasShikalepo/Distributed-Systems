@@ -230,7 +230,22 @@ type Asset record{
                     break;
                 }
             }
-            
+             // After the loop, check if a matching component was found.
+            if indexToRemove != -1 {
+                // If the component was found, remove it from the array at the stored index.
+                Asset removed = <Asset> existingAsset.components.remove(indexToRemove);
+                // Return the updated Asset record to the client.
+                return removed;
+            } else {
+                // If the component was not found in the asset, return a Not Found error.
+                return http:NOT_FOUND; // Component not found
+            }
+        } else {
+            // If the asset itself was not found in the database, return a Not Found error.
+            return http:NOT_FOUND; // Asset not found
+        }
+    }
+
 
 
 
