@@ -86,6 +86,17 @@ public client class AssetDatabaseClient {
     remote function addScheduleToAsset(string assetTag, Schedule newSchedule) returns Asset|error {
         return self.httpClient->post(string `/addScheduleToAsset?assetTag=${assetTag}`, newSchedule);
     }
+   remote function removeScheduleFromAsset(string assetTag, string scheduleName, string dueDate) returns Schedule|error {
+    return self.httpClient->delete(string `/removeScheduleFromAsset?assetTag=${assetTag}&scheduleName=${scheduleName}&dueDate=${dueDate}`);
+}
+
+    remote function addTaskToWorkOrder(string assetTag, string workOrderId, Task newTask) returns Asset|error {
+        return self.httpClient->post(string `/addTaskToWorkOrder?assetTag=${assetTag}&workOrderId=${workOrderId}`, newTask);
+    }
+
+    remote function removeTaskFromWorkOrder(string assetTag, string workOrderId, string service_) returns Task|error {
+        return self.httpClient->delete(string `/removeTaskFromWorkOrder?assetTag=${assetTag}&workOrderId=${workOrderId}&service_=${service_}`);
+    }
 
 
     }
