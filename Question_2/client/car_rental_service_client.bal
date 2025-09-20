@@ -2,11 +2,6 @@ import ballerina/io;
 
 Car_Rental_ServiceClient ep = check new ("http://localhost:9090");
 
-import ballerina/io;
-
-// gRPC client stub generated from your proto
-Car_Rental_ServiceClient ep = check new ("http://localhost:9090");
-
 // --- Admin Menu ---
 function adminMenu() {
     io:println("\n--- Admin Menu ---");
