@@ -191,6 +191,46 @@ type Asset record{
       }
     }
 
+    resource function post addComponentToAsset(string assetTag, @http:Payload Component newComponent) returns Asset|http:Conflict|http:NotFound {
+        if MainDatabase.hasKey(assetTag) {
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            // Checking if the component already exists to avoid duplicates 
+            
+            foreach var component in existingAsset.components {
+                if component.serialNumber == newComponent.serialNumber {
+                    return http:CONFLICT; // Component with this serial number already exists
+                }
+            }
+            // Add the new component to the existing array
+            existingAsset.components.push(newComponent);
+            return existingAsset;
+        } else {
+            return http:NOT_FOUND;
+        }
+    }
+    resource function delete removeComponentFromAsset(string assetTag, string serialNumber) returns Asset|http:NotFound {
+        // First, we check if the asset with the given assetTag exists in the database.
+        if MainDatabase.hasKey(assetTag) {
+            // Retrieve the asset record from the map. The <Asset> cast is safe
+            // because the hasKey() check confirms the key exists.
+            Asset existingAsset = <Asset> MainDatabase[assetTag];
+            
+            // Initialize a variable to hold the index of the component to remove.
+            // A value of -1 indicates the component has not been found yet.
+            int indexToRemove = -1;
+            
+            // Find the index of the component to remove by iterating through the components array.
+            foreach int i in 0..<existingAsset.components.length() {
+                // If the serialNumber of the current component matches the one provided,
+                // we've found our target.
+                if existingAsset.components[i].serialNumber == serialNumber {
+                    // Store the index of the found component.
+                    indexToRemove = i;
+                    // Exit the loop immediately to save time.
+                    break;
+                }
+            }
+            
 
 
 
