@@ -1,5 +1,5 @@
-import ballerina/io;
 import ballerina/http;
+import ballerina/io;
 
 public type Task record {
     string service_;
@@ -34,7 +34,6 @@ public type Asset record {
     WorkOrder[] workOrders;
 };
 
-
 public client class AssetDatabaseClient {
     // The underlying HTTP client.
     private final http:Client httpClient;
@@ -55,7 +54,8 @@ public client class AssetDatabaseClient {
     remote function getSpecificAsset(string assetTag) returns Asset|error|() {
         return self.httpClient->get(string `/getSpecificAsset?assetTag=${assetTag}`);
     }
- remote function newAsset(Asset newAsset) returns Asset|error {
+
+    remote function newAsset(Asset newAsset) returns Asset|error {
         return self.httpClient->post("/newAsset", newAsset);
     }
 
@@ -64,7 +64,8 @@ public client class AssetDatabaseClient {
     remote function updateAsset(Asset updatedAsset) returns Asset|error {
         return self.httpClient->put("/updateAsset", updatedAsset);
     }
- // Corresponds to 'resource function get getAssetsByFaculty(@http:Query string faculty)'
+
+    // Corresponds to 'resource function get getAssetsByFaculty(@http:Query string faculty)'
     remote function getAssetsByFaculty(string faculty) returns Asset[]|error {
         return self.httpClient->get(string `/getAssetsByFaculty?faculty=${faculty}`);
     }
@@ -73,6 +74,7 @@ public client class AssetDatabaseClient {
     remote function deleteAsset(string assetTag) returns Asset|error {
         return self.httpClient->delete(string `/deleteAsset?assetTag=${assetTag}`);
     }
+
     // Corresponds to 'resource function post addComponentToAsset(string assetTag, @http:Payload Component newComponent)'
     remote function addComponentToAsset(string assetTag, Component newComponent) returns Asset|error {
         return self.httpClient->post(string `/addComponentToAsset?assetTag=${assetTag}`, newComponent);
@@ -86,9 +88,10 @@ public client class AssetDatabaseClient {
     remote function addScheduleToAsset(string assetTag, Schedule newSchedule) returns Asset|error {
         return self.httpClient->post(string `/addScheduleToAsset?assetTag=${assetTag}`, newSchedule);
     }
-   remote function removeScheduleFromAsset(string assetTag, string scheduleName, string dueDate) returns Schedule|error {
-    return self.httpClient->delete(string `/removeScheduleFromAsset?assetTag=${assetTag}&scheduleName=${scheduleName}&dueDate=${dueDate}`);
-}
+
+    remote function removeScheduleFromAsset(string assetTag, string scheduleName, string dueDate) returns Schedule|error {
+        return self.httpClient->delete(string `/removeScheduleFromAsset?assetTag=${assetTag}&scheduleName=${scheduleName}&dueDate=${dueDate}`);
+    }
 
     remote function addTaskToWorkOrder(string assetTag, string workOrderId, Task newTask) returns Asset|error {
         return self.httpClient->post(string `/addTaskToWorkOrder?assetTag=${assetTag}&workOrderId=${workOrderId}`, newTask);
@@ -98,9 +101,26 @@ public client class AssetDatabaseClient {
         return self.httpClient->delete(string `/removeTaskFromWorkOrder?assetTag=${assetTag}&workOrderId=${workOrderId}&service_=${service_}`);
     }
 
+    remote function openNewWorkOrder(string assetTag, WorkOrder newWorkOrder) returns Asset|error {
+        return self.httpClient->post(string `/openNewWorkOrder?assetTag=${assetTag}`, newWorkOrder);
+    }
+
+    remote function updateWorkOrderStatus(string assetTag, string workOrderId, string newStatus) returns Asset|error {
+        return self.httpClient->put(string `/updateWorkOrderStatus?assetTag=${assetTag}&workOrderId=${workOrderId}&newStatus=${newStatus}`, ());
+    }
+
+    remote function closeWorkOrder(string assetTag, string workOrderId) returns Asset|error {
+        return self.httpClient->put(string `/closeWorkOrder?assetTag=${assetTag}&workOrderId=${workOrderId}`, ());
+    }
+
+    // Corresponds to 'resource function get getOverdueAssets()'
+    remote function getOverdueAssets() returns Asset[]|error {
+        return self.httpClient->get("/overdueAssets");
 
     }
-    
+
+}
+
 public function main() {
     io:println("Hello, World!");
 }
