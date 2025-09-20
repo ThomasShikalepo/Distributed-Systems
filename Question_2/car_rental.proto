@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package car_rental;
+
+// ----------- MESSAGES -----------
+
+message Car {
+  string plate = 1;
+  string make = 2;
+  string model = 3;
+  int32 year = 4;
+  double daily_price = 5;
+  int32 mileage = 6;
+  string status = 7; // AVAILABLE / UNAVAILABLE
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string role = 3; // CUSTOMER or ADMIN
+}
+
+message Reservation {
+  string reservation_id = 1;
+  string customer_id = 2;
+  repeated CartItem items = 3;
+  double total_price = 4;
+}
+
+message CartItem {
+  string plate = 1;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+// ----------- REQUESTS & RESPONSES -----------
+
+message AddCarRequest { Car car = 1; }
+message AddCarResponse { string plate = 1; }
+
+message UpdateCarRequest { Car car = 1; }
+message UpdateCarResponse { string status = 1; }
+
+message RemoveCarRequest { string plate = 1; }
+message RemoveCarResponse { repeated Car cars = 1; }
+
+message ListAvailableCarsRequest { string filter = 1; }
+message SearchCarRequest { string plate = 1; }
+message SearchCarResponse { Car car = 1; string message = 2; }
+
+message AddToCartRequest {
+  string customer_id = 1;
+  CartItem item = 2;
+}
+message AddToCartResponse { string message = 1; }
+
+message PlaceReservationRequest { string customer_id = 1; }
+message PlaceReservationResponse { Reservation reservation = 1; }
+
+message CreateUsersResponse { string message = 1; }
+
+// ----------- SERVICE -----------
+
+service Car_Rental_Service {
+  rpc add_car(AddCarRequest) returns (AddCarResponse);
+  rpc create_users(stream User) returns (CreateUsersResponse);
+  rpc update_car(UpdateCarRequest) returns (UpdateCarResponse);
+  rpc remove_car(RemoveCarRequest) returns (RemoveCarResponse);
+  rpc list_available_cars(ListAvailableCarsRequest) returns (stream Car);
+  rpc search_car(SearchCarRequest) returns (SearchCarResponse);
+  rpc add_to_cart(AddToCartRequest) returns (AddToCartResponse);
+  rpc place_reservation(PlaceReservationRequest) returns (PlaceReservationResponse);
+}
