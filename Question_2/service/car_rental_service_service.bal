@@ -64,10 +64,25 @@ service "Car_Rental_Service" on ep {
         return s;
     }
 
-    remote function search_car(SearchCarRequest value) returns SearchCarResponse|error {
+    // SEARCH CAR
+    remote function search_car(SearchCarRequest req) returns SearchCarResponse|error {
+        if carsTable.hasKey(req.plate) {
+            Car car = carsTable.get(req.plate);
+            return {car: car, message: "FOUND"};
+        }
+        return {message: "NOT FOUND"};
     }
 
-    remote function add_to_cart(AddToCartRequest value) returns AddToCartResponse|error {
+    // ADD TO CART
+    remote function add_to_cart(AddToCartRequest req) returns AddToCartResponse|error {
+        CartItem item = req.item;
+        cartItemsTable.add({
+            customer_id: req.customer_id,
+            plate: item.plate,
+            start_date: item.start_date,
+            end_date: item.end_date
+        });
+        return {message: "Added to cart"};
     }
 
     // PLACE RESERVATION
