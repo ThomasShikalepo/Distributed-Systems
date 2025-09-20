@@ -249,4 +249,20 @@ type Asset record{
 
 
 
-  }
+  resource function post addScheduleToAsset(string assetTag, @http:Payload Schedule newSchedule) returns Asset|error {
+    if MainDatabase.hasKey(assetTag) {
+        Asset existingAsset = <Asset> MainDatabase[assetTag];
+
+        foreach var schl in existingAsset.schedules {
+            if schl.scheduleName == newSchedule.scheduleName && schl.dueDate == newSchedule.dueDate {
+                return error("Schedule with same name and date already exists");
+            }
+        }
+
+        existingAsset.schedules.push(newSchedule);
+        return existingAsset;
+    } else {
+        return error("Asset not found with tag: " + assetTag);
+    }
+}
+
