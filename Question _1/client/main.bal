@@ -39,3 +39,24 @@ public type Asset record {
 public function main() {
     io:println("Hello, World!");
 }
+public client class AssetDatabaseClient {
+    // The underlying HTTP client.
+    private final http:Client httpClient;
+
+    // Constructor to initialize the client with the service's URL.
+    function init(string url) returns error? {
+        self.httpClient = check new (url);
+    }
+
+    // Corresponds to 'resource function get getAllAssets()'
+    // Returns an array of 'Asset' records.
+    remote function getAllAssets() returns Asset[]|error {
+        return self.httpClient->get("/getAllAssets");
+    }
+
+    // Corresponds to 'resource function get getSpecificAsset(string assetTag)'
+    // Returns an 'Asset' or '()' if not found.
+    remote function getSpecificAsset(string assetTag) returns Asset|error|() {
+        return self.httpClient->get(string `/getSpecificAsset?assetTag=${assetTag}`);
+    }
+    }
