@@ -51,7 +51,7 @@ function adminSelection() returns error? {
                 check createTrip();
             }
             2 => {
-                manageTrips();
+                check manageTrips();
             }
             3 => {
                 publishDisruption();
@@ -108,28 +108,135 @@ function createTrip() returns error? {
     };
 
     // Insert into database
-  sql:ExecutionResult result = check dbClient->execute(
+  sql:ExecutionResult _ = check dbClient->execute(
     `INSERT INTO trips (trip_id, trip_name, departure_time, arrival_time, vehicle_Id, status)
      VALUES (${trip.tripId}, ${trip.trip_name}, ${trip.departure_time}, ${trip.arrival_time}, ${trip.vehicleId}, ${trip.status})`
-);
+     );
 
     // Convert Trip to JSON
-    json tripJson = trip.toJson();
+    json tripJson = <json>trip;
 
-    // Send to Kafka
-    check producer->send({
-        topic: "trips",
-        value: tripJson.toJsonString()
-    });
-
+    check publishTripEvent("CREATE", trip);
     io:println("Trip Created: " + tripJson.toJsonString());
 }
 
 
-// Placeholder functions for now
-function manageTrips() {
-    io:println("Feature: update or cancel trips (to be implemented)");
+function manageTrips() returns error? {
+    io:println("\n--- Manage Trips ---");
+    io:println("1. Update Trip");
+    io:println("2. Delete Trip");
+    io:println("3. back to Admin Menu");
+
+    io:print("Enter your choice: ");
+    int choice = check int:fromString(io:readln());
+
+    match choice {
+        1 => {
+            check updateTrip();
+        }
+        
+        2 => {
+            check deleteTrip();
+        }
+
+        3 => {
+             io:println("Returning to Admin Menu...");
+             adminMenu();
+        }
+        _=> {
+            io:println("Invalid choice, try again.");
+        }
+    }
 }
+
+function updateTrip() returns error? {
+    io:println("\n--- Update Trip ---");
+    io:print("Enter Trip ID to update: ");
+    string tripId = io:readln();
+
+    io:println("What do you want to update?");
+    io:println("1. Status");
+    io:println("2. Departure Time");
+    io:println("3. Arrival Time");
+    io:println("4. Vehicle ID");
+
+    int choice = check int:fromString(io:readln());
+
+    string newValue = "";
+
+    if choice == 1 {
+        io:print("Enter new Status (SCHEDULED/ONGOING/COMPLETED/CANCELLED): ");
+        newValue = io:readln();
+        sql:ExecutionResult _ = check dbClient->execute(
+            `UPDATE trips SET status = ${newValue} WHERE trip_id = ${tripId}`
+        );
+    } else if choice == 2 {
+        io:print("Enter new Departure Time (yyyy-mm-dd hh:mm:ss): ");
+        newValue = io:readln();
+        sql:ExecutionResult _ = check dbClient->execute(
+            `UPDATE trips SET departure_time = ${newValue} WHERE trip_id = ${tripId}`
+        );
+    } else if choice == 3 {
+        io:print("Enter new Arrival Time (yyyy-mm-dd hh:mm:ss): ");
+        newValue = io:readln();
+        sql:ExecutionResult _ = check dbClient->execute(
+            `UPDATE trips SET arrival_time = ${newValue} WHERE trip_id = ${tripId}`
+        );
+    } else if choice == 4 {
+        io:print("Enter new Vehicle ID: ");
+        newValue = io:readln();
+        sql:ExecutionResult _ = check dbClient->execute(
+            `UPDATE trips SET vehicle_Id = ${newValue} WHERE trip_id = ${tripId}`
+        );
+    } else {
+        io:println("Invalid choice. Cancelling update.");
+        return;
+    }
+
+    // Fetch updated trip
+    stream<record {| anydata...; |}, sql:Error?> queryResult = dbClient->query(
+        `SELECT * FROM trips WHERE trip_id = ${tripId}`
+    );
+    record {}? fetchedTrip  = check queryResult.next();
+
+    if fetchedTrip  is record {} {
+        // Convert record to JSON safely
+        json tripJson = check <json>fetchedTrip ;
+        check publishTripEvent("UPDATE", tripJson);
+    }
+
+    io:println("Trip updated successfully!");
+}
+
+
+function deleteTrip() returns error? {
+    io:println("\n--- Delete Trip ---");
+    io:print("Enter Trip ID to delete: ");
+    string tripId = io:readln();
+
+    // Fetch trip before deleting
+    stream<record {| anydata...; |}, sql:Error?> queryResult = dbClient->query(
+        `SELECT * FROM trips WHERE trip_id = ${tripId}`
+    );
+    record {}? fetchedTrip  = check queryResult.next();
+
+    // Delete the trip
+    sql:ExecutionResult _ = check dbClient->execute(
+        `DELETE FROM trips WHERE trip_id = ${tripId}`
+    );
+
+    // Publish Kafka event
+    if fetchedTrip  is record {} {
+        // Convert record to JSON safely
+        json tripJson = check <json>fetchedTrip ;
+        check publishTripEvent("DELETE", tripJson);
+    }
+
+    io:println("Trip deleted successfully!");
+}
+
+
+
 
 function publishDisruption() {
     io:println("Feature: publish service disruptions (to Kafka topic scheduleUpdates)");
@@ -146,3 +253,19 @@ public function main() returns error? {
 }
 
 
+function publishTripEvent(string action, json payload) returns error?{
+    // Ensure payload is proper JSON
+    json eventPlayload = check <json>payload;
+
+    json event = {
+        action: action,
+        data: eventPlayload
+    };
+
+    check producer->send ({
+         topic: "trips",
+        value: event.toJsonString()
+    });
+
+    io:println("Kafka Event Published: " + event.toJsonString());
+}
