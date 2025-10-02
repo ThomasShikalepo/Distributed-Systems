@@ -1,7 +1,7 @@
 import ballerina/io;
+import ballerina/sql;
 import ballerina/uuid;
 import ballerinax/kafka;
-import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 
@@ -10,8 +10,9 @@ public type Trips record {|
     string tripId;
     string trip_name;
     string departure_time; // e.g., "2025-09-28 07:00:00"
-    string arrival_time;   // e.g., "2025-09-28 07:45:00"
+    string arrival_time; // e.g., "2025-09-28 07:45:00"
     string vehicleId?;
+    decimal price;
     string status = "SCHEDULED"; // SCHEDULED, ONGOING, COMPLETED, CANCELLED
 |};
 
@@ -21,7 +22,6 @@ public type Disruption record {|
     string description?;
     string createdAt?;
 |};
-
 
 configurable string USER = ?;
 configurable string PASSWORD = ?;
@@ -65,7 +65,7 @@ function adminSelection() returns error? {
                 check publishDisruption();
             }
             4 => {
-                viewReports();
+                check viewReports();
             }
             5 => {
                 io:println("Exiting Admin menu...");
@@ -102,6 +102,9 @@ function createTrip() returns error? {
     io:print("Arrival Time (yyyy-mm-dd hh:mm:ss): ");
     string arrivalTime = io:readln();
 
+    io:print("Ticket Price: ");
+    decimal price = check decimal:fromString(io:readln());
+
     io:print("Vehicle ID: ");
     string vehicleId = io:readln();
 
@@ -112,14 +115,21 @@ function createTrip() returns error? {
         departure_time: departureTime,
         arrival_time: arrivalTime,
         vehicleId: vehicleId,
+        price: price,
         status: "SCHEDULED"
     };
 
     // Insert into database
-  sql:ExecutionResult _ = check dbClient->execute(
-    `INSERT INTO trips (trip_id, trip_name, departure_time, arrival_time, vehicle_Id, status)
-     VALUES (${trip.tripId}, ${trip.trip_name}, ${trip.departure_time}, ${trip.arrival_time}, ${trip.vehicleId}, ${trip.status})`
-     );
+    sql:ExecutionResult _ = check dbClient->execute(
+    `INSERT INTO trips (trip_id, trip_name, departure_time, arrival_time, vehicle_Id,status, price)
+     VALUES (${trip.tripId}, 
+     ${trip.trip_name}, 
+     ${trip.departure_time}, 
+     ${trip.arrival_time}, 
+     ${trip.vehicleId}, 
+     ${trip.status}, 
+     ${trip.price})`
+    );
 
     // Convert Trip to JSON
     json tripJson = <json>trip;
@@ -127,7 +137,6 @@ function createTrip() returns error? {
     check publishTripEvent("CREATE", trip);
     io:println("Trip Created: " + tripJson.toJsonString());
 }
-
 
 function manageTrips() returns error? {
     io:println("\n--- Manage Trips ---");
@@ -142,16 +151,16 @@ function manageTrips() returns error? {
         1 => {
             check updateTrip();
         }
-        
+
         2 => {
             check deleteTrip();
         }
 
         3 => {
-             io:println("Returning to Admin Menu...");
-             adminMenu();
+            io:println("Returning to Admin Menu...");
+            adminMenu();
         }
-        _=> {
+        _ => {
             io:println("Invalid choice, try again.");
         }
     }
@@ -202,20 +211,19 @@ function updateTrip() returns error? {
     }
 
     // Fetch updated trip
-    stream<record {| anydata...; |}, sql:Error?> queryResult = dbClient->query(
+    stream<record {|anydata...;|}, sql:Error?> queryResult = dbClient->query(
         `SELECT * FROM trips WHERE trip_id = ${tripId}`
     );
-    record {}? fetchedTrip  = check queryResult.next();
+    record {}? fetchedTrip = check queryResult.next();
 
-    if fetchedTrip  is record {} {
+    if fetchedTrip is record {} {
         // Convert record to JSON safely
-        json tripJson = check <json>fetchedTrip ;
+        json tripJson = check <json>fetchedTrip;
         check publishTripEvent("UPDATE", tripJson);
     }
 
     io:println("Trip updated successfully!");
 }
-
 
 function deleteTrip() returns error? {
     io:println("\n--- Delete Trip ---");
@@ -223,10 +231,10 @@ function deleteTrip() returns error? {
     string tripId = io:readln();
 
     // Fetch trip before deleting
-    stream<record {| anydata...; |}, sql:Error?> queryResult = dbClient->query(
+    stream<record {|anydata...;|}, sql:Error?> queryResult = dbClient->query(
         `SELECT * FROM trips WHERE trip_id = ${tripId}`
     );
-    record {}? fetchedTrip  = check queryResult.next();
+    record {}? fetchedTrip = check queryResult.next();
 
     // Delete the trip
     sql:ExecutionResult _ = check dbClient->execute(
@@ -234,17 +242,14 @@ function deleteTrip() returns error? {
     );
 
     // Publish Kafka event
-    if fetchedTrip  is record {} {
+    if fetchedTrip is record {} {
         // Convert record to JSON safely
-        json tripJson = check <json>fetchedTrip ;
+        json tripJson = check <json>fetchedTrip;
         check publishTripEvent("DELETE", tripJson);
     }
 
     io:println("Trip deleted successfully!");
 }
-
-
-
 
 function publishDisruption() returns error? {
     io:println("\n--- Publish Service Disruption ---");
@@ -260,7 +265,7 @@ function publishDisruption() returns error? {
     io:print("Desruption: ");
     string desruption = io:readln();
 
-    Disruption  disruption  = {
+    Disruption disruption = {
         disruptionId: uuid:createType1AsString(),
         title: title,
         description: desruption
@@ -271,8 +276,8 @@ function publishDisruption() returns error? {
         `INSERT INTO disruptions (disruption_id, title, description)
          VALUES (${disruption.disruptionId}, ${disruption.title}, ${disruption.description})`
     );
-    
-     // Convert to JSON
+
+    // Convert to JSON
     json disruptionJson = <json>disruption;
 
     // Publish Kafka event
@@ -289,8 +294,8 @@ function publishDisruption() returns error? {
     io:println("Disruption Published: " + event.toJsonString());
 }
 
-function viewReports() {
-    io:println("Feature: generate reports (to be implemented)");
+function viewReports() returns error? {
+
 }
 
 // Entry point
@@ -299,8 +304,7 @@ public function main() returns error? {
     check adminSelection();
 }
 
-
-function publishTripEvent(string action, json payload) returns error?{
+function publishTripEvent(string action, json payload) returns error? {
     // Ensure payload is proper JSON
     json eventPlayload = check <json>payload;
 
@@ -309,8 +313,8 @@ function publishTripEvent(string action, json payload) returns error?{
         data: eventPlayload
     };
 
-    check producer->send ({
-         topic: "trips",
+    check producer->send({
+        topic: "trips",
         value: event.toJsonString()
     });
 
