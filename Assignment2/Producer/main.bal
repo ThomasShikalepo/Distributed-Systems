@@ -15,6 +15,14 @@ public type Trips record {|
     string status = "SCHEDULED"; // SCHEDULED, ONGOING, COMPLETED, CANCELLED
 |};
 
+public type Disruption record {|
+    string disruptionId;
+    string title;
+    string description?;
+    string createdAt?;
+|};
+
+
 configurable string USER = ?;
 configurable string PASSWORD = ?;
 configurable string HOST = ?;
@@ -54,7 +62,7 @@ function adminSelection() returns error? {
                 check manageTrips();
             }
             3 => {
-                publishDisruption();
+                check publishDisruption();
             }
             4 => {
                 viewReports();
@@ -238,8 +246,47 @@ function deleteTrip() returns error? {
 
 
 
-function publishDisruption() {
-    io:println("Feature: publish service disruptions (to Kafka topic scheduleUpdates)");
+function publishDisruption() returns error? {
+    io:println("\n--- Publish Service Disruption ---");
+
+    io:print("Title: ");
+    string title = io:readln();
+
+    if title == "exit" {
+        io:println("Cancelled");
+        return;
+    }
+
+    io:print("Desruption: ");
+    string desruption = io:readln();
+
+    Disruption  disruption  = {
+        disruptionId: uuid:createType1AsString(),
+        title: title,
+        description: desruption
+    };
+
+    // Insert into database
+    sql:ExecutionResult _ = check dbClient->execute(
+        `INSERT INTO disruptions (disruption_id, title, description)
+         VALUES (${disruption.disruptionId}, ${disruption.title}, ${disruption.description})`
+    );
+    
+     // Convert to JSON
+    json disruptionJson = <json>disruption;
+
+    // Publish Kafka event
+    json event = {
+        action: "DISRUPTION",
+        data: disruptionJson
+    };
+
+    check producer->send({
+        topic: "notifications",
+        value: event.toJsonString()
+    });
+
+    io:println("Disruption Published: " + event.toJsonString());
 }
 
 function viewReports() {
