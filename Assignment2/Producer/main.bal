@@ -16,6 +16,12 @@ public type Trips record {|
     string status = "SCHEDULED"; // SCHEDULED, ONGOING, COMPLETED, CANCELLED
 |};
 
+type TripSummary record {|
+    string trip_id;
+    string trip_name;
+    string departure_time;
+|};
+
 public type Disruption record {|
     string disruptionId;
     string title;
@@ -295,7 +301,55 @@ function publishDisruption() returns error? {
 }
 
 function viewReports() returns error? {
+    io:println("\n--- Ticket Sales & Trip Reports ---");
 
+    // Count trips by status
+    stream<record {|string status; int count;|}, sql:Error?> statusResult =
+        dbClient->query(`SELECT status, COUNT(*) as count FROM trips GROUP BY status`);
+
+    io:println("\nTrips by Status:");
+    record {|record {|string status; int count;|} value;|}? row = check statusResult.next();
+    while row is record {|record {|string status; int count;|} value;|} {
+        io:println(" - " + row.value.status + ": " + row.value.count.toString());
+        row = check statusResult.next();
+    }
+
+    //  Trips by Vehicle
+    stream<record {|string vehicleId; int count;|}, sql:Error?> vehicleResult =
+        dbClient->query(`SELECT vehicle_Id as vehicleId, COUNT(*) as count FROM trips GROUP BY vehicle_Id`);
+
+    record {|record {|string vehicleId; int count;|} value;|}? vrow = check vehicleResult.next();
+    while vrow is record {|record {|string vehicleId; int count;|} value;|} {
+        io:println(" - Vehicle " + vrow.value.vehicleId + ": " + vrow.value.count.toString());
+        vrow = check vehicleResult.next();
+    }
+
+    // UPCOMING TRIPS
+
+    io:println("\nUpcoming Scheduled Trips:");
+
+    // Keep the rowType in the stream
+    stream<TripSummary, sql:Error?> upComingResult =
+    dbClient->query(`SELECT trip_id, trip_name, departure_time
+                     FROM trips 
+                     WHERE status = 'SCHEDULED'
+                     ORDER BY departure_time ASC LIMIT 5`,
+                    TripSummary);
+
+    // Fetch first row
+    record {|TripSummary value;|}? wrappedRow = check upComingResult.next();
+
+    // Loop while row is present
+    while wrappedRow is record {|TripSummary value;|} {
+        TripSummary upComing = wrappedRow.value; // unpack .value
+        io:println(" - " + upComing.trip_name + " (Trip ID: " + upComing.trip_id +
+                ") departs at " + upComing.departure_time);
+
+        // fetch next
+        wrappedRow = check upComingResult.next();
+    }
+
+    
 }
 
 // Entry point
