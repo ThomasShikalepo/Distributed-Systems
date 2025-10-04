@@ -183,8 +183,6 @@ function login() returns string? {
 
     var row = result.next();
 
-    
-
     if row is sql:Error {
         io:println("Database error: ", row.message());
         return ();
@@ -197,8 +195,33 @@ function login() returns string? {
 }
 
 function browseTrips() returns error? {
+    io:println("\nAvailable Trips:");
 
+    stream<record {|string trip_name; string departure_time; string arrival_time; decimal price;|}, sql:Error?> res =
+        dbClient->query(`SELECT trip_name, departure_time, arrival_time, price 
+                         FROM trips 
+                         WHERE status = 'SCHEDULED'
+                         ORDER BY departure_time ASC LIMIT 5`);
+
+    var row = check res.next();
+    while row is record {|record {|string trip_name; string departure_time; string arrival_time; decimal price;|} value;|} {
+        io:println("Trip: " + row.value.trip_name);
+        io:println("Departure: " + row.value.departure_time);
+        io:println("Arrival:   " + row.value.arrival_time);
+        io:println("Price:     N$ " + row.value.price.toString());
+        io:println("───────────────────────────────");
+        row = check res.next();
+    }
 }
+
+// CREATE TABLE trips (
+//     trip_id CHAR(36) PRIMARY KEY,
+//     trip_name VARCHAR(100) NOT NULL,
+//     departure_time DATETIME NOT NULL,
+//     arrival_time   DATETIME NOT NULL,
+//     vehicle_Id varchar(50) NOT NULL,
+//     status ENUM('SCHEDULED','DELAYED','CANCELLED','COMPLETED') DEFAULT 'SCHEDULED'
+// );
 
 function purchaseTicket() returns error? {
 
