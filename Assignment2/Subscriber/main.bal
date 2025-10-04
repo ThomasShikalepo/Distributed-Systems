@@ -128,11 +128,50 @@ function passengerSelection() returns error? {
 
 
 function createAccount() returns error? {
+    io:print("First name: ");
+    string first_name = io:readln();
 
+    io:print("Last name: ");
+    string last_name = io:readln();
+
+    io:print("Email: ");
+    string email = io:readln();
+
+    io:print("Password: ");
+    string password = io:readln();
+
+    io:print("Phone number: ");
+    string phone = io:readln();
+
+    Passenger p = {
+        passenger_id: uuid:createType1AsString(),
+        first_name: first_name,
+        last_name: last_name,
+        email: email,
+        password: password,
+        phone: phone
+    };
+
+    sql:ExecutionResult _= check dbClient->execute(
+        `INSERT INTO passengers (passenger_id, first_name, last_name, email, password, phone)
+        value (${p.passenger_id}, ${p.first_name}, ${p.last_name}, ${p.email}, ${p.password}, ${p.phone})`
+    );
+
+    io:println("✅ Account created successfully!");
 }
 
-function logIn() returns error? {
+// CREATE TABLE passengers (
+//     passenger_id CHAR(36) PRIMARY KEY,
+//     first_name   VARCHAR(100) NOT NULL,
+//     last_name    VARCHAR(100) NOT NULL,
+//     email        VARCHAR(150) UNIQUE NOT NULL,
+//     password     VARCHAR(255) NOT NULL,
+//     phone        VARCHAR(50),
+//     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+// );
 
+function logIn() returns error? {
+    
 }
 
 function browseTrips() returns error? {
@@ -144,7 +183,7 @@ function purchaseTicket() returns error? {
 }
 
 function validateTicket() returns error? {
-    
+
 }
 
 service on consumerListener {
