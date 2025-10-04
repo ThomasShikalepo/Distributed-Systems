@@ -68,7 +68,7 @@ function authMenu() returns error? {
                 check createAccount();
             }
             2 => {
-                string? loggedInId = check logIn();
+                string? loggedInId = check login();
 
                 if loggedInId is string {
                     currentPassengerId = loggedInId;
@@ -126,7 +126,6 @@ function passengerSelection() returns error? {
     }
 }
 
-
 function createAccount() returns error? {
     io:print("First name: ");
     string first_name = io:readln();
@@ -152,12 +151,12 @@ function createAccount() returns error? {
         phone: phone
     };
 
-    sql:ExecutionResult _= check dbClient->execute(
+    sql:ExecutionResult _ = check dbClient->execute(
         `INSERT INTO passengers (passenger_id, first_name, last_name, email, password, phone)
         value (${p.passenger_id}, ${p.first_name}, ${p.last_name}, ${p.email}, ${p.password}, ${p.phone})`
     );
 
-    io:println("✅ Account created successfully!");
+    io:println("Account created successfully!");
 }
 
 // CREATE TABLE passengers (
@@ -170,8 +169,31 @@ function createAccount() returns error? {
 //     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 // );
 
-function logIn() returns error? {
+// Login
+function login() returns string? {
+    io:print("Enter Email: ");
+    string email = io:readln();
+    io:print("Enter password: ");
+    string password = io:readln();
+
+    stream<record {|string passengerId;|}, sql:Error?> result =
+        dbClient->query(`SELECT passenger_id as passengerId 
+                         FROM passengers 
+                         WHERE email = ${email} AND password = ${password}`);
+
+    var row = result.next();
+
     
+
+    if row is sql:Error {
+        io:println("Database error: ", row.message());
+        return ();
+    } else if row is record {|record {|string passengerId;|} value;|} {
+        return row.value.passengerId;
+    } else {
+        io:println("Invalid credentials.");
+        return ();
+    }
 }
 
 function browseTrips() returns error? {
