@@ -43,6 +43,8 @@ public type Passenger record {|
 
 public type Ticket record {|
     string ticket_id;
+    string passenger_id?;
+    string trip_id;
     string ticket_type;
     string status = "CREATED";
 |};
@@ -224,7 +226,57 @@ function browseTrips() returns error? {
 // );
 
 function purchaseTicket() returns error? {
+    if currentPassengerId is () {
+        io:println("You must log in first.");
+        return;
+    }
 
+    io:print("Enter Trip name:");
+    string trip_name = io:readln();
+
+    io:print("Ticket type (single/multi/pass): ");
+    string tType = io:readln();
+
+    // Get the trip_id based on the trip_name
+    stream<record {|string trip_id;|}, sql:Error?> request = dbClient->query(`SELECT trip_id AS trip_id 
+                         FROM trips 
+                         WHERE trip_name = ${trip_name} LIMIT 1`);
+
+    var row = request.next();
+
+    if row is sql:Error {
+        io:println("Database error: ", row.message());
+        return row;
+    } else if row is record {| record {| string trip_id; |} value; |} {
+        string trip_id = row.value.trip_id;
+
+        // Step 2: Create the ticket
+        if currentPassengerId is string {
+            if currentPassengerId is string {
+                Ticket ticket = {
+                    ticket_id: uuid:createType1AsString(),
+                    passenger_id: currentPassengerId,
+                    trip_id: trip_id,
+                    ticket_type: tType,
+                    status: "PAID"
+                };
+
+                var insertResult = dbClient->execute(
+                `INSERT INTO tickets (ticket_id, passenger_id, trip_id, type, status)
+                 VALUES (${ticket.ticket_id}, ${ticket.passenger_id}, ${ticket.trip_id}, ${ticket.ticket_type}, ${ticket.status})`);
+
+                if insertResult is sql:Error {
+                    io:println("Failed to save ticket: ", insertResult.message());
+                } else {
+                    io:println("Ticket purchased successfully!");
+                }
+            }
+        }
+        else {
+            io:println("No trip found with that name. Please check the spelling.");
+        }
+        return;
+    }
 }
 
 function validateTicket() returns error? {
